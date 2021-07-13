@@ -1,21 +1,24 @@
-
+const logger = require('morgan');
 var express = require('express'); 
 var request = require('request'); 
 var cors = require('cors');
 var querystring = require('querystring');
 var cookieParser = require('cookie-parser');
+var SpotifyWebApi = require('spotify-web-api-node');
+
+var app = express();
+
+app.use(logger('dev'));
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+
+
+var usersid='';
+var stateKey = 'spotify_auth_state';
 
 var client_id = '3054cb711c3c4fc48cff3458cdaddea2'; 
 var client_secret = 'b43bf5c8fe0040829f0029ac301a5ea7';
-var redirect_uri = 'http://localhost:8888/callback/';
-var userid='';
-var tokenuse='';
-var SpotifyWebApi = require('spotify-web-api-node');
-var spotifyApi = new SpotifyWebApi({
-  clientId: '3054cb711c3c4fc48cff3458cdaddea2',
-  clientSecret: 'b43bf5c8fe0040829f0029ac301a5ea7',
-  redirectUri: 'http://www.example.com/callback'
-});
+var redirect_uri = 'http://tanmaysiwach.com';
 
 var generateRandomString = function(length) {
   var text = '';
@@ -27,22 +30,22 @@ var generateRandomString = function(length) {
   return text;
 };
 
-var stateKey = 'spotify_auth_state';
-
-var app = express();
-
 app.use(express.static(__dirname + '/public'))
    .use(cors())
    .use(cookieParser());
+   
+// app.post('/login', function(req, res){
+//   console.log("node works");
+// });
+
 
 app.get('/login', function(req, res) {
-  console.log('login');
+  console.log('ABCD');
   var state = generateRandomString(16);
   res.cookie(stateKey, state);
 
   // your application requests authorization
   var scope = 'user-read-private user-read-email';
-
   res.redirect('https://accounts.spotify.com/authorize?' +
     querystring.stringify({
       response_type: 'code',
@@ -97,7 +100,7 @@ app.get('/callback', function(req, res) {
         request.get(options, function(error, response, body) {
           console.log(body);
           userid = body.id;
-          console.log('id: '+userid);
+          usersid = body.id;
         });
 
         // we can also pass the token to the browser to make requests from there
@@ -114,6 +117,7 @@ app.get('/callback', function(req, res) {
       }
     });
   }
+  
 });
 
 app.get('/refresh_token', function(req, res) {
@@ -139,16 +143,56 @@ app.get('/refresh_token', function(req, res) {
   });
 });
 
-
+let artists = [];
 app.get('/playlists', function(req,res){
-  console.log(tokenuse);
-  spotifyApi.getUserPlaylists('3176idi2pnmyd2v3t7kndzf3vrzq')
+  //getArtist('4O15NlyKLIASxsJ0PrXPfz');
+  spotifyApi.getUserPlaylists(usersid)
   .then(function(data) {
-    console.log('Retrieved playlists', data.body);
+    res.send(data.body);
+    for (let playlist of data.body.items) {
+      //console.log(playlist.name + " " + playlist.id) 
+      let tracks = getPlaylistTracks(playlist.id, playlist.name);
+      const tracksJSON = { tracks }
+      let data = JSON.stringify(tracksJSON);
+      
+      //console.log(data);
+    }
   },function(err) {
     console.log('Something went wrong!', err);
   });
 
+  async function getPlaylistTracks(playlistId, playlistName) {
+
+    const data = await spotifyApi.getPlaylistTracks(playlistId, {
+      offset: 0,
+      limit: 100,
+      fields: 'items'
+    })
+    let tracks = [];
+    
+    for (let track_obj of data.body.items) {
+      const track = track_obj.track
+      console.log(track_obj.track.artists);
+      tracks.push(track);
+      artists.push(track.artists[0].id);
+      console.log(track.name + " : " + track.artists[0].name + track.artists[0].id);
+    }
+    getArtist('4O15NlyKLIASxsJ0PrXPfz');
+    console.log("---------------+++++++++++++++++++++++++");
+    return tracks;
+  }
 });
+
+function getArtist(artistId){
+spotifyApi.getArtist(artistId)
+  .then(function(data) {
+    //console.log('Artist information', data.body);
+    console.log(data.body.name);
+    console.log("Genres: " + data.body.genres);
+  }, function(err) {
+    console.error(err);
+  });
+}
+
 console.log('Listening on 8888');
 app.listen(8888);
