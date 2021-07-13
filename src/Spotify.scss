@@ -1,0 +1,36 @@
+
+.container{
+    width: 100vw;
+    height: 100vh;
+    font-family: 'Montserrat', sans-serif;
+    justify-content: center;
+    display: flex;
+    flex-direction: row;
+    background-color: #191414;
+}
+.info{
+    display: flex;
+    flex-direction: column;
+    align-self: center;
+    align-items: center;
+    color: blanchedalmond;
+    padding: 6vw;
+    
+    .logo{
+        font-size: 5vw;
+        font-weight: 600;
+    }
+
+    .btn{
+        font-size: 1.5vw;
+        padding: 2vw 7vw;
+        border-radius: 3vw;
+        color: blanchedalmond;
+        background-color: #1DB954;
+        &:hover {
+            background-color: #1ED760;
+        }
+    }
+}
+
+
